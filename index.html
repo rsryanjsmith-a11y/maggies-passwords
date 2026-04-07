@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Maggie's Passwords">
+<title>Maggie's Passwords</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --cream: #FDF8F3;
+    --cream-dark: #F5EDE2;
+    --card: #FFFFFF;
+    --rose: #C77D5B;
+    --rose-dark: #A85D3B;
+    --rose-light: #F0D4C4;
+    --gold: #D4A574;
+    --sage: #7BA05B;
+    --sage-light: #D8E8C8;
+    --grey: #B8B8B8;
+    --grey-light: #E8E4DE;
+    --text: #3D2817;
+    --text-soft: #8B6F5C;
+    --shadow: 0 4px 20px rgba(61, 40, 23, 0.08);
+    --shadow-hover: 0 8px 30px rgba(61, 40, 23, 0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { font-size: 18px; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: 100px;
+  }
+
+  /* ========== HEADER ========== */
+  .header {
+    background: linear-gradient(135deg, #FFF8F0 0%, #F5EDE2 100%);
+    padding: 2rem 1.5rem 1.5rem;
+    border-bottom: 3px solid var(--rose-light);
+    text-align: center;
+  }
+
+  .header h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 2.25rem;
+    color: var(--rose-dark);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .header .subtitle {
+    color: var(--text-soft);
+    font-size: 1rem;
+    margin-top: 0.25rem;
+  }
+
+  /* ========== MAIN LAYOUT ========== */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem;
+  }
+
+  /* ========== SEARCH ========== */
+  .search-wrap {
+    position: relative;
+    margin-bottom: 1.25rem;
+  }
+
+  .search {
+    width: 100%;
+    padding: 1.1rem 1.25rem 1.1rem 3.25rem;
+    font-size: 1.15rem;
+    font-family: inherit;
+    border: 2px solid var(--rose-light);
+    border-radius: 16px;
+    background: var(--card);
+    color: var(--text);
+    box-shadow: var(--shadow);
+    transition: all 0.2s;
+  }
+
+  .search:focus {
+    outline: none;
+    border-color: var(--rose);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 1.1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.4rem;
+    color: var(--rose);
+    pointer-events: none;
+  }
+
+  /* ========== FILTERS ========== */
+  .filter-row {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+  }
+
+  .filter-btn {
+    padding: 0.7rem 1.25rem;
+    border: 2px solid var(--rose-light);
+    background: var(--card);
+    border-radius: 999px;
+    font-size: 1rem;
+    font-family: inherit;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .filter-btn:hover { border-color: var(--rose); }
+
+  .filter-btn.active {
+    background: var(--rose);
+    color: white;
+    border-color: var(--rose);
+  }
+
+  .filter-btn .count {
+    opacity: 0.7;
+    font-size: 0.85rem;
+    margin-left: 0.35rem;
+  }
+
+  /* ========== CATEGORY PILLS ========== */
+  .categories {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.25rem;
+    scrollbar-width: thin;
+  }
+
+  .cat-pill {
+    padding: 0.5rem 1rem;
+    background: var(--cream-dark);
+    border: 1.5px solid transparent;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-soft);
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+
+  .cat-pill:hover { background: var(--rose-light); color: var(--text); }
+
+  .cat-pill.active {
+    background: var(--gold);
+    color: white;
+    border-color: var(--gold);
+  }
+
+  /* ========== ACTION BAR ========== */
+  .actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 0.9rem 1.25rem;
+    border-radius: 12px;
+    border: none;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-primary {
+    background: var(--rose);
+    color: white;
+    box-shadow: 0 3px 10px rgba(199, 125, 91, 0.3);
+  }
+
+  .btn-primary:hover { background: var(--rose-dark); transform: translateY(-1px); }
+
+  .btn-secondary {
+    background: var(--card);
+    color: var(--text);
+    border: 2px solid var(--rose-light);
+  }
+
+  .btn-secondary:hover { border-color: var(--rose); }
+
+  .btn-danger {
+    background: #D9534F;
+    color: white;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-soft);
+    border: 2px solid transparent;
+  }
+
+  .btn-ghost:hover { color: var(--rose); }
+
+  /* ========== PASSWORD LIST ========== */
+  .group-heading {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.35rem;
+    color: var(--rose-dark);
+    margin: 1.5rem 0 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--rose-light);
+  }
+
+  .group-heading:first-child { margin-top: 0; }
+
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-bottom: 0.75rem;
+    box-shadow: var(--shadow);
+    border-left: 5px solid var(--sage);
+    transition: all 0.15s;
+  }
+
+  .card.inactive {
+    border-left-color: var(--grey);
+    opacity: 0.65;
+    background: #FAFAF7;
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text);
+    flex: 1;
+    word-break: break-word;
+  }
+
+  .status-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .status-active { background: var(--sage-light); color: #4A6B2E; }
+  .status-inactive { background: var(--grey-light); color: var(--text-soft); }
+
+  .field {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 0;
+    border-top: 1px solid var(--cream-dark);
+    font-size: 1rem;
+  }
+
+  .field:first-of-type { border-top: none; padding-top: 0.25rem; }
+
+  .field-label {
+    font-weight: 600;
+    color: var(--text-soft);
+    min-width: 85px;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .field-value {
+    flex: 1;
+    color: var(--text);
+    word-break: break-all;
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 0.95rem;
+  }
+
+  .password-hidden {
+    letter-spacing: 0.2em;
+    font-size: 1.1rem;
+  }
+
+  .copy-btn {
+    padding: 0.5rem 0.85rem;
+    background: var(--cream-dark);
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--rose-dark);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+
+  .copy-btn:hover { background: var(--rose-light); }
+  .copy-btn.copied { background: var(--sage); color: white; }
+
+  .notes {
+    margin-top: 0.5rem;
+    padding: 0.65rem 0.85rem;
+    background: var(--cream-dark);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: var(--text-soft);
+    font-style: italic;
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--cream-dark);
+    flex-wrap: wrap;
+  }
+
+  .card-actions .btn {
+    padding: 0.6rem 0.95rem;
+    font-size: 0.9rem;
+    flex: 1;
+    min-width: 100px;
+    justify-content: center;
+  }
+
+  /* ========== EMPTY STATES ========== */
+  .empty {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background: var(--card);
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .empty h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    color: var(--rose-dark);
+    margin-bottom: 0.5rem;
+  }
+
+  .empty p {
+    color: var(--text-soft);
+    font-size: 1.05rem;
+    margin-bottom: 1.25rem;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .empty .btn { margin: 0.35rem; }
+
+  /* ========== FLOATING ADD BUTTON ========== */
+  .fab {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--rose);
+    color: white;
+    border: none;
+    font-size: 2rem;
+    font-weight: 300;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(199, 125, 91, 0.45);
+    z-index: 50;
+    transition: all 0.2s;
+  }
+
+  .fab:hover { transform: scale(1.08); background: var(--rose-dark); }
+
+  /* ========== MODAL ========== */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(61, 40, 23, 0.55);
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    z-index: 100;
+    padding: 1rem;
+    overflow-y: auto;
+  }
+
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: var(--cream);
+    border-radius: 20px;
+    padding: 1.75rem;
+    width: 100%;
+    max-width: 520px;
+    margin: 2rem auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+
+  .modal h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    color: var(--rose-dark);
+    margin-bottom: 1.25rem;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+    font-size: 0.95rem;
+  }
+
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    font-size: 1.05rem;
+    font-family: inherit;
+    border: 2px solid var(--rose-light);
+    border-radius: 10px;
+    background: white;
+    color: var(--text);
+  }
+
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: var(--rose);
+  }
+
+  .form-group textarea { min-height: 70px; resize: vertical; }
+
+  .form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1rem;
+    background: var(--cream-dark);
+    border-radius: 10px;
+    cursor: pointer;
+  }
+
+  .form-check input { width: 20px; height: 20px; cursor: pointer; }
+
+  .form-check label { font-weight: 500; cursor: pointer; margin: 0; }
+
+  .modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+
+  .modal-actions .btn { flex: 1; justify-content: center; }
+
+  /* ========== WELCOME SCREEN ========== */
+  .welcome {
+    max-width: 560px;
+    margin: 2rem auto;
+    text-align: center;
+    background: var(--card);
+    border-radius: 24px;
+    padding: 2.5rem 2rem;
+    box-shadow: var(--shadow);
+  }
+
+  .welcome-heart { font-size: 3.5rem; margin-bottom: 0.5rem; }
+
+  .welcome h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    color: var(--rose-dark);
+    margin-bottom: 0.75rem;
+  }
+
+  .welcome p {
+    color: var(--text-soft);
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    line-height: 1.6;
+  }
+
+  .welcome .btn {
+    margin: 0.5rem;
+    padding: 1.1rem 1.75rem;
+    font-size: 1.05rem;
+  }
+
+  .privacy-note {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: var(--sage-light);
+    border-radius: 12px;
+    font-size: 0.95rem;
+    color: #4A6B2E;
+  }
+
+  /* ========== TOAST ========== */
+  .toast {
+    position: fixed;
+    bottom: 6rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--text);
+    color: white;
+    padding: 0.9rem 1.5rem;
+    border-radius: 999px;
+    font-weight: 500;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    z-index: 200;
+    opacity: 0;
+    transition: all 0.3s;
+  }
+
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+
+  /* ========== FOOTER ========== */
+  .footer {
+    text-align: center;
+    padding: 2rem 1rem 1rem;
+    color: var(--text-soft);
+    font-size: 0.85rem;
+  }
+
+  .footer strong { color: var(--rose-dark); }
+
+  /* ========== FILE INPUT HIDDEN ========== */
+  #fileInput { display: none; }
+
+  /* ========== RESPONSIVE ========== */
+  @media (min-width: 700px) {
+    html { font-size: 17px; }
+    .header h1 { font-size: 2.75rem; }
+    .container { padding: 2rem 1.5rem; }
+    .card { padding: 1.5rem 1.75rem; }
+    .field-label { min-width: 110px; font-size: 0.9rem; }
+    .card-actions .btn { flex: 0 1 auto; min-width: 120px; }
+  }
+
+  @media (max-width: 480px) {
+    .header { padding: 1.5rem 1rem 1.25rem; }
+    .header h1 { font-size: 1.85rem; }
+    .container { padding: 1.25rem 0.85rem; }
+    .field { flex-wrap: wrap; }
+    .field-label { min-width: 100%; }
+    .fab { width: 58px; height: 58px; right: 1rem; bottom: 1rem; }
+  }
+
+  /* Larger text option for accessibility */
+  body.large-text { font-size: 1.1em; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Maggie's Passwords</h1>
+  <div class="subtitle">Your private, personal password dashboard</div>
+</div>
+
+<div class="container" id="mainContainer">
+  <!-- Content is injected by JS -->
+</div>
+
+<button class="fab" id="fabBtn" title="Add new password" style="display:none;">+</button>
+
+<input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+
+<!-- ========== EDIT/ADD MODAL ========== -->
+<div class="modal-backdrop" id="editModal">
+  <div class="modal">
+    <h2 id="modalTitle">Add Password</h2>
+    <form id="editForm">
+      <div class="form-group">
+        <label for="f-website">Website or App *</label>
+        <input type="text" id="f-website" required placeholder="e.g. Amazon, Chase Bank">
+      </div>
+      <div class="form-group">
+        <label for="f-username">Username or Email</label>
+        <input type="text" id="f-username" placeholder="e.g. maggie@email.com">
+      </div>
+      <div class="form-group">
+        <label for="f-password">Password *</label>
+        <input type="text" id="f-password" required placeholder="Your password">
+      </div>
+      <div class="form-group">
+        <label for="f-category">Category</label>
+        <input type="text" id="f-category" placeholder="e.g. Banking, Shopping, Email" list="catList">
+        <datalist id="catList"></datalist>
+      </div>
+      <div class="form-group">
+        <label for="f-notes">Notes (optional)</label>
+        <textarea id="f-notes" placeholder="Anything helpful to remember"></textarea>
+      </div>
+      <div class="form-group">
+        <div class="form-check">
+          <input type="checkbox" id="f-active" checked>
+          <label for="f-active">This password is active (I still use it)</label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast">Copied!</div>
+
+<div class="footer">
+  <strong>Your passwords stay on this device.</strong><br>
+  Nothing is ever sent to the internet, to AI, or to anyone else.<br>
+  Made with love for Maggie.
+</div>
+
+<script>
+/* ============================================================
+   MAGGIE'S PASSWORDS — private, local, no cloud
+   All data lives in this browser's storage. Nothing leaves.
+   ============================================================ */
+
+const STORAGE_KEY = 'maggies_passwords_v1';
+let state = {
+  passwords: [],
+  search: '',
+  filter: 'active',   // 'all' | 'active' | 'inactive'
+  category: 'all',
+  editingId: null
+};
+
+/* ---------- STORAGE ---------- */
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) state.passwords = JSON.parse(raw);
+  } catch(e) { console.error('Load failed', e); }
+}
+
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.passwords));
+  } catch(e) {
+    alert('Could not save. Your browser storage may be full.');
+  }
+}
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+}
+
+/* ---------- RENDER ---------- */
+function render() {
+  const c = document.getElementById('mainContainer');
+  const fab = document.getElementById('fabBtn');
+
+  if (state.passwords.length === 0) {
+    fab.style.display = 'none';
+    c.innerHTML = welcomeHTML();
+    return;
+  }
+
+  fab.style.display = 'flex';
+  const allCats = getCategories();
+  const activeCount = state.passwords.filter(p => p.active).length;
+  const inactiveCount = state.passwords.length - activeCount;
+
+  // Filter + search
+  let list = state.passwords.filter(p => {
+    if (state.filter === 'active' && !p.active) return false;
+    if (state.filter === 'inactive' && p.active) return false;
+    if (state.category !== 'all' && (p.category || 'Uncategorized') !== state.category) return false;
+    if (state.search) {
+      const q = state.search.toLowerCase();
+      return (p.website||'').toLowerCase().includes(q) ||
+             (p.username||'').toLowerCase().includes(q) ||
+             (p.category||'').toLowerCase().includes(q) ||
+             (p.notes||'').toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  // Sort alphabetically
+  list.sort((a,b) => (a.website||'').localeCompare(b.website||''));
+
+  // Group by category
+  const groups = {};
+  list.forEach(p => {
+    const cat = p.category || 'Uncategorized';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(p);
+  });
+  const groupNames = Object.keys(groups).sort();
+
+  c.innerHTML = `
+    <div class="search-wrap">
+      <span class="search-icon">🔎</span>
+      <input type="search" class="search" id="searchInput" placeholder="Search your passwords..." value="${escape(state.search)}">
+    </div>
+
+    <div class="filter-row">
+      <button class="filter-btn ${state.filter==='active'?'active':''}" data-filter="active">
+        Active <span class="count">${activeCount}</span>
+      </button>
+      <button class="filter-btn ${state.filter==='all'?'active':''}" data-filter="all">
+        All <span class="count">${state.passwords.length}</span>
+      </button>
+      <button class="filter-btn ${state.filter==='inactive'?'active':''}" data-filter="inactive">
+        Inactive <span class="count">${inactiveCount}</span>
+      </button>
+    </div>
+
+    ${allCats.length > 0 ? `
+      <div class="categories">
+        <button class="cat-pill ${state.category==='all'?'active':''}" data-cat="all">All categories</button>
+        ${allCats.map(cat => `<button class="cat-pill ${state.category===cat?'active':''}" data-cat="${escape(cat)}">${escape(cat)}</button>`).join('')}
+      </div>
+    ` : ''}
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="openAdd()">+ Add Password</button>
+      <button class="btn btn-secondary" onclick="importExcel()">⬆ Import Excel</button>
+      <button class="btn btn-secondary" onclick="exportExcel()">⬇ Export / Backup</button>
+      <button class="btn btn-ghost" onclick="toggleText()">Aa Larger text</button>
+    </div>
+
+    ${list.length === 0 ? `
+      <div class="empty">
+        <div class="empty-icon">🔍</div>
+        <h2>No passwords found</h2>
+        <p>Try a different search or change the filter above.</p>
+      </div>
+    ` : groupNames.map(cat => `
+      <div class="group-heading">${escape(cat)}</div>
+      ${groups[cat].map(p => cardHTML(p)).join('')}
+    `).join('')}
+  `;
+
+  // Wire up events
+  const searchEl = document.getElementById('searchInput');
+  searchEl.oninput = e => { state.search = e.target.value; render(); searchEl.focus(); };
+
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.onclick = () => { state.filter = btn.dataset.filter; render(); };
+  });
+
+  document.querySelectorAll('.cat-pill').forEach(btn => {
+    btn.onclick = () => { state.category = btn.dataset.cat; render(); };
+  });
+}
+
+function welcomeHTML() {
+  return `
+    <div class="welcome">
+      <div class="welcome-heart">💝</div>
+      <h2>Welcome, Mom!</h2>
+      <p>This is your own private password dashboard. It's simple, beautiful, and built just for you.</p>
+      <p>To get started, bring in your passwords from your Excel spreadsheet — I'll organize them for you automatically.</p>
+
+      <button class="btn btn-primary" onclick="importExcel()">⬆ Import My Excel File</button>
+      <button class="btn btn-secondary" onclick="openAdd()">+ Add One by One</button>
+
+      <div class="privacy-note">
+        🔒 <strong>Your passwords are safe.</strong><br>
+        Nothing ever leaves this device. Not to the internet, not to AI, not to anyone. It all stays right here on your computer or phone.
+      </div>
+    </div>
+  `;
+}
+
+function cardHTML(p) {
+  const activeClass = p.active ? '' : 'inactive';
+  const badge = p.active
+    ? '<span class="status-badge status-active">✓ Active</span>'
+    : '<span class="status-badge status-inactive">Inactive</span>';
+  const pwDisplay = p.shown
+    ? `<span class="field-value">${escape(p.password || '')}</span>`
+    : `<span class="field-value password-hidden">••••••••••</span>`;
+
+  return `
+    <div class="card ${activeClass}">
+      <div class="card-header">
+        <div class="card-title">${escape(p.website || '(no name)')}</div>
+        ${badge}
+      </div>
+
+      ${p.username ? `
+      <div class="field">
+        <span class="field-label">Username</span>
+        <span class="field-value">${escape(p.username)}</span>
+        <button class="copy-btn" onclick="copyText('${escape(p.username)}', this)">Copy</button>
+      </div>` : ''}
+
+      <div class="field">
+        <span class="field-label">Password</span>
+        ${pwDisplay}
+        <button class="copy-btn" onclick="togglePw('${p.id}')">${p.shown ? 'Hide' : 'Show'}</button>
+        <button class="copy-btn" onclick="copyText(${JSON.stringify(p.password || '').replace(/"/g,'&quot;')}, this)">Copy</button>
+      </div>
+
+      ${p.notes ? `<div class="notes">📝 ${escape(p.notes)}</div>` : ''}
+
+      <div class="card-actions">
+        <button class="btn btn-secondary" onclick="toggleActive('${p.id}')">
+          ${p.active ? '⊗ Mark Inactive' : '✓ Mark Active'}
+        </button>
+        <button class="btn btn-secondary" onclick="openEdit('${p.id}')">✎ Edit</button>
+        <button class="btn btn-danger" onclick="removeEntry('${p.id}')">🗑 Delete</button>
+      </div>
+    </div>
+  `;
+}
+
+function getCategories() {
+  const set = new Set();
+  state.passwords.forEach(p => { if (p.category) set.add(p.category); });
+  return Array.from(set).sort();
+}
+
+function escape(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+/* ---------- ACTIONS ---------- */
+function togglePw(id) {
+  const p = state.passwords.find(x => x.id === id);
+  if (p) { p.shown = !p.shown; render(); }
+}
+
+function toggleActive(id) {
+  const p = state.passwords.find(x => x.id === id);
+  if (p) { p.active = !p.active; save(); render(); }
+}
+
+function removeEntry(id) {
+  const p = state.passwords.find(x => x.id === id);
+  if (!p) return;
+  if (confirm(`Delete the password for "${p.website}"?\n\nThis cannot be undone.`)) {
+    state.passwords = state.passwords.filter(x => x.id !== id);
+    save(); render();
+    showToast('Deleted');
+  }
+}
+
+function copyText(text, btn) {
+  const actual = (typeof text === 'string') ? text : String(text);
+  navigator.clipboard.writeText(actual).then(() => {
+    if (btn) {
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
+    }
+    showToast('Copied to clipboard');
+  }).catch(() => {
+    // Fallback for older browsers / non-HTTPS
+    const ta = document.createElement('textarea');
+    ta.value = actual;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); showToast('Copied'); } catch(e) { showToast('Copy failed'); }
+    document.body.removeChild(ta);
+  });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+/* ---------- MODAL ---------- */
+function openAdd() {
+  state.editingId = null;
+  document.getElementById('modalTitle').textContent = 'Add a Password';
+  document.getElementById('f-website').value = '';
+  document.getElementById('f-username').value = '';
+  document.getElementById('f-password').value = '';
+  document.getElementById('f-category').value = '';
+  document.getElementById('f-notes').value = '';
+  document.getElementById('f-active').checked = true;
+  refreshCatList();
+  document.getElementById('editModal').classList.add('open');
+  setTimeout(() => document.getElementById('f-website').focus(), 100);
+}
+
+function openEdit(id) {
+  const p = state.passwords.find(x => x.id === id);
+  if (!p) return;
+  state.editingId = id;
+  document.getElementById('modalTitle').textContent = 'Edit Password';
+  document.getElementById('f-website').value = p.website || '';
+  document.getElementById('f-username').value = p.username || '';
+  document.getElementById('f-password').value = p.password || '';
+  document.getElementById('f-category').value = p.category || '';
+  document.getElementById('f-notes').value = p.notes || '';
+  document.getElementById('f-active').checked = p.active !== false;
+  refreshCatList();
+  document.getElementById('editModal').classList.add('open');
+}
+
+function refreshCatList() {
+  const dl = document.getElementById('catList');
+  dl.innerHTML = getCategories().map(c => `<option value="${escape(c)}">`).join('');
+}
+
+function closeModal() {
+  document.getElementById('editModal').classList.remove('open');
+}
+
+document.getElementById('editForm').onsubmit = function(e) {
+  e.preventDefault();
+  const data = {
+    website: document.getElementById('f-website').value.trim(),
+    username: document.getElementById('f-username').value.trim(),
+    password: document.getElementById('f-password').value,
+    category: document.getElementById('f-category').value.trim(),
+    notes: document.getElementById('f-notes').value.trim(),
+    active: document.getElementById('f-active').checked
+  };
+  if (!data.website) { alert('Please enter a website or app name.'); return; }
+
+  if (state.editingId) {
+    const p = state.passwords.find(x => x.id === state.editingId);
+    Object.assign(p, data);
+    showToast('Saved');
+  } else {
+    data.id = uid();
+    state.passwords.push(data);
+    showToast('Added');
+  }
+  save();
+  closeModal();
+  render();
+};
+
+/* ---------- EXCEL IMPORT / EXPORT ---------- */
+function importExcel() {
+  document.getElementById('fileInput').click();
+}
+
+document.getElementById('fileInput').onchange = function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const data = new Uint8Array(ev.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+      const imported = mapRows(rows);
+      if (imported.length === 0) {
+        alert('No passwords found in that file. Check that it has columns like "Website", "Username", and "Password".');
+        return;
+      }
+      const msg = state.passwords.length > 0
+        ? `Found ${imported.length} passwords.\n\nADD to your existing ${state.passwords.length}? Click OK.\nClick Cancel to REPLACE everything with the imported list.`
+        : `Import ${imported.length} passwords?`;
+      if (state.passwords.length > 0) {
+        if (confirm(msg)) {
+          state.passwords = state.passwords.concat(imported);
+        } else {
+          if (confirm('Are you sure? This will erase your current list and replace it with the imported one.')) {
+            state.passwords = imported;
+          } else { return; }
+        }
+      } else {
+        if (!confirm(msg)) return;
+        state.passwords = imported;
+      }
+      save(); render();
+      showToast(`Imported ${imported.length} passwords`);
+    } catch(err) {
+      alert('Sorry, something went wrong reading that file.\n\n' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value = ''; // reset
+};
+
+function mapRows(rows) {
+  // Smart column detection
+  const result = [];
+  for (const row of rows) {
+    const keys = Object.keys(row);
+    const find = (aliases) => {
+      for (const k of keys) {
+        const low = k.toLowerCase().trim();
+        if (aliases.some(a => low === a || low.includes(a))) return row[k];
+      }
+      return '';
+    };
+    const entry = {
+      id: uid(),
+      website: String(find(['website','site','service','account','name','app','url','description'])).trim(),
+      username: String(find(['username','user','email','login','userid','user id','user name'])).trim(),
+      password: String(find(['password','pass','pwd','pw'])).trim(),
+      category: String(find(['category','type','group','folder'])).trim(),
+      notes: String(find(['note','comment','remark','detail'])).trim(),
+      active: true
+    };
+    // Active/inactive column
+    const activeVal = String(find(['active','status','current','inactive'])).toLowerCase().trim();
+    if (activeVal) {
+      if (['no','false','inactive','0','n','off','old'].includes(activeVal)) entry.active = false;
+      if (['yes','true','active','1','y','on','current'].includes(activeVal)) entry.active = true;
+    }
+    // Skip empty rows
+    if (!entry.website && !entry.password && !entry.username) continue;
+    // If there's no website but there's a password, use the first field as website
+    if (!entry.website && keys.length > 0) entry.website = String(row[keys[0]] || '').trim();
+    result.push(entry);
+  }
+  return result;
+}
+
+function exportExcel() {
+  if (state.passwords.length === 0) {
+    alert('No passwords to export yet.');
+    return;
+  }
+  const rows = state.passwords.map(p => ({
+    Website: p.website || '',
+    Username: p.username || '',
+    Password: p.password || '',
+    Category: p.category || '',
+    Notes: p.notes || '',
+    Active: p.active ? 'Yes' : 'No'
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  // Make columns wider
+  ws['!cols'] = [{wch:25},{wch:30},{wch:25},{wch:18},{wch:30},{wch:10}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Passwords');
+  const today = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `Maggies-Passwords-Backup-${today}.xlsx`);
+  showToast('Backup saved');
+}
+
+/* ---------- EXTRAS ---------- */
+function toggleText() {
+  document.body.classList.toggle('large-text');
+  try { localStorage.setItem('maggies_largetext', document.body.classList.contains('large-text') ? '1' : '0'); } catch(e){}
+}
+
+document.getElementById('fabBtn').onclick = openAdd;
+
+document.getElementById('editModal').onclick = function(e) {
+  if (e.target === this) closeModal();
+};
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+/* ---------- INIT ---------- */
+load();
+if (localStorage.getItem('maggies_largetext') === '1') document.body.classList.add('large-text');
+render();
+</script>
+</body>
+</html>
