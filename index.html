@@ -480,6 +480,12 @@
   }
 
   .form-group textarea { min-height: 70px; resize: vertical; }
+  .field-help {
+    font-size: 0.85rem;
+    color: #8a6a6f;
+    margin-top: 0.35rem;
+    font-style: italic;
+  }
 
   .form-check {
     display: flex;
@@ -624,8 +630,13 @@
     <h2 id="modalTitle">Add Password</h2>
     <form id="editForm">
       <div class="form-group">
-        <label for="f-website">Website or App *</label>
-        <input type="text" id="f-website" required placeholder="e.g. Amazon, Chase Bank">
+        <label for="f-title">Title *</label>
+        <input type="text" id="f-title" required placeholder="e.g. Social Security, Gas Bill">
+        <div class="field-help">This is the word you'll search for.</div>
+      </div>
+      <div class="form-group">
+        <label for="f-website">Website or App</label>
+        <input type="text" id="f-website" placeholder="e.g. secure.ssa.gov">
       </div>
       <div class="form-group">
         <label for="f-username">Username or Email</label>
@@ -636,7 +647,15 @@
         <input type="text" id="f-password" required placeholder="Your password">
       </div>
       <div class="form-group">
-        <label for="f-category">Category</label>
+        <label for="f-identification">Identification (optional)</label>
+        <input type="text" id="f-identification" placeholder="e.g. Account #, Member ID">
+      </div>
+      <div class="form-group">
+        <label for="f-security">Security Questions (optional)</label>
+        <textarea id="f-security" placeholder="e.g. First pet: Fluffy"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="f-category">Category (optional)</label>
         <input type="text" id="f-category" placeholder="e.g. Banking, Shopping, Email" list="catList">
         <datalist id="catList"></datalist>
       </div>
@@ -672,7 +691,7 @@
    All data lives in this browser's storage. Nothing leaves.
    ============================================================ */
 
-const STORAGE_KEY = 'maggies_passwords_v1';
+const STORAGE_KEY = 'maggies_passwords_v2';
 let state = {
   passwords: [],
   search: '',
@@ -724,16 +743,19 @@ function render() {
     if (state.category !== 'all' && (p.category || 'Uncategorized') !== state.category) return false;
     if (state.search) {
       const q = state.search.toLowerCase();
-      return (p.website||'').toLowerCase().includes(q) ||
+      return (p.title||'').toLowerCase().includes(q) ||
+             (p.website||'').toLowerCase().includes(q) ||
              (p.username||'').toLowerCase().includes(q) ||
+             (p.identification||'').toLowerCase().includes(q) ||
+             (p.security||'').toLowerCase().includes(q) ||
              (p.category||'').toLowerCase().includes(q) ||
              (p.notes||'').toLowerCase().includes(q);
     }
     return true;
   });
 
-  // Sort alphabetically
-  list.sort((a,b) => (a.website||'').localeCompare(b.website||''));
+  // Sort alphabetically by title (fallback to website)
+  list.sort((a,b) => (a.title||a.website||'').localeCompare(b.title||b.website||''));
 
   // Group by category
   const groups = {};
@@ -747,7 +769,7 @@ function render() {
   c.innerHTML = `
     <div class="search-wrap">
       <span class="search-icon">🔎</span>
-      <input type="search" class="search" id="searchInput" placeholder="Search your passwords..." value="${escape(state.search)}">
+      <input type="search" class="search" id="searchInput" placeholder="Search by title, website, or anything..." value="${escape(state.search)}">
     </div>
 
     <div class="filter-row">
@@ -829,18 +851,28 @@ function cardHTML(p) {
     ? `<span class="field-value">${escape(p.password || '')}</span>`
     : `<span class="field-value password-hidden">••••••••••</span>`;
 
+  const displayTitle = p.title || p.website || '(no name)';
+  const showWebsite = p.website && p.website !== p.title;
+
   return `
     <div class="card ${activeClass}">
       <div class="card-header">
-        <div class="card-title">${escape(p.website || '(no name)')}</div>
+        <div class="card-title">${escape(displayTitle)}</div>
         ${badge}
       </div>
+
+      ${showWebsite ? `
+      <div class="field">
+        <span class="field-label">Website</span>
+        <span class="field-value">${escape(p.website)}</span>
+        <button class="copy-btn" onclick="copyText(${JSON.stringify(p.website).replace(/"/g,'&quot;')}, this)">Copy</button>
+      </div>` : ''}
 
       ${p.username ? `
       <div class="field">
         <span class="field-label">Username</span>
         <span class="field-value">${escape(p.username)}</span>
-        <button class="copy-btn" onclick="copyText('${escape(p.username)}', this)">Copy</button>
+        <button class="copy-btn" onclick="copyText(${JSON.stringify(p.username).replace(/"/g,'&quot;')}, this)">Copy</button>
       </div>` : ''}
 
       <div class="field">
@@ -850,7 +882,16 @@ function cardHTML(p) {
         <button class="copy-btn" onclick="copyText(${JSON.stringify(p.password || '').replace(/"/g,'&quot;')}, this)">Copy</button>
       </div>
 
-      ${p.notes ? `<div class="notes">📝 ${escape(p.notes)}</div>` : ''}
+      ${p.identification ? `
+      <div class="field">
+        <span class="field-label">Identification</span>
+        <span class="field-value">${escape(p.identification)}</span>
+        <button class="copy-btn" onclick="copyText(${JSON.stringify(p.identification).replace(/"/g,'&quot;')}, this)">Copy</button>
+      </div>` : ''}
+
+      ${p.security ? `<div class="notes">🔑 <strong>Security Questions:</strong><br>${escape(p.security).replace(/\n/g,'<br>')}</div>` : ''}
+
+      ${p.notes ? `<div class="notes">📝 ${escape(p.notes).replace(/\n/g,'<br>')}</div>` : ''}
 
       <div class="card-actions">
         <button class="btn btn-secondary" onclick="toggleActive('${p.id}')">
@@ -932,15 +973,18 @@ function showToast(msg) {
 function openAdd() {
   state.editingId = null;
   document.getElementById('modalTitle').textContent = 'Add a Password';
+  document.getElementById('f-title').value = '';
   document.getElementById('f-website').value = '';
   document.getElementById('f-username').value = '';
   document.getElementById('f-password').value = '';
+  document.getElementById('f-identification').value = '';
+  document.getElementById('f-security').value = '';
   document.getElementById('f-category').value = '';
   document.getElementById('f-notes').value = '';
   document.getElementById('f-active').checked = true;
   refreshCatList();
   document.getElementById('editModal').classList.add('open');
-  setTimeout(() => document.getElementById('f-website').focus(), 100);
+  setTimeout(() => document.getElementById('f-title').focus(), 100);
 }
 
 function openEdit(id) {
@@ -948,9 +992,12 @@ function openEdit(id) {
   if (!p) return;
   state.editingId = id;
   document.getElementById('modalTitle').textContent = 'Edit Password';
+  document.getElementById('f-title').value = p.title || '';
   document.getElementById('f-website').value = p.website || '';
   document.getElementById('f-username').value = p.username || '';
   document.getElementById('f-password').value = p.password || '';
+  document.getElementById('f-identification').value = p.identification || '';
+  document.getElementById('f-security').value = p.security || '';
   document.getElementById('f-category').value = p.category || '';
   document.getElementById('f-notes').value = p.notes || '';
   document.getElementById('f-active').checked = p.active !== false;
@@ -970,14 +1017,17 @@ function closeModal() {
 document.getElementById('editForm').onsubmit = function(e) {
   e.preventDefault();
   const data = {
+    title: document.getElementById('f-title').value.trim(),
     website: document.getElementById('f-website').value.trim(),
     username: document.getElementById('f-username').value.trim(),
     password: document.getElementById('f-password').value,
+    identification: document.getElementById('f-identification').value.trim(),
+    security: document.getElementById('f-security').value.trim(),
     category: document.getElementById('f-category').value.trim(),
     notes: document.getElementById('f-notes').value.trim(),
     active: document.getElementById('f-active').checked
   };
-  if (!data.website) { alert('Please enter a website or app name.'); return; }
+  if (!data.title) { alert('Please enter a title (the word you\'ll search for).'); return; }
 
   if (state.editingId) {
     const p = state.passwords.find(x => x.id === state.editingId);
@@ -1039,24 +1089,33 @@ document.getElementById('fileInput').onchange = function(e) {
 };
 
 function mapRows(rows) {
-  // Smart column detection
+  // Smart column detection — match exact header first, then partial
   const result = [];
   for (const row of rows) {
     const keys = Object.keys(row);
     const find = (aliases) => {
+      // exact match first
       for (const k of keys) {
         const low = k.toLowerCase().trim();
-        if (aliases.some(a => low === a || low.includes(a))) return row[k];
+        if (aliases.some(a => low === a)) return row[k];
+      }
+      // then partial
+      for (const k of keys) {
+        const low = k.toLowerCase().trim();
+        if (aliases.some(a => low.includes(a))) return row[k];
       }
       return '';
     };
     const entry = {
       id: uid(),
-      website: String(find(['website','site','service','account','name','app','url','description'])).trim(),
-      username: String(find(['username','user','email','login','userid','user id','user name'])).trim(),
+      title: String(find(['title','label','name','service'])).trim(),
+      website: String(find(['website','site','url','link','web','address'])).trim(),
+      username: String(find(['username','user name','user','email','login','userid','user id'])).trim(),
       password: String(find(['password','pass','pwd','pw'])).trim(),
+      identification: String(find(['identification','id','account','member','account number','account #','acct'])).trim(),
+      security: String(find(['security questions','security question','security','questions','secret question'])).trim(),
       category: String(find(['category','type','group','folder'])).trim(),
-      notes: String(find(['note','comment','remark','detail'])).trim(),
+      notes: String(find(['notes','note','comment','remark','detail'])).trim(),
       active: true
     };
     // Active/inactive column
@@ -1066,9 +1125,9 @@ function mapRows(rows) {
       if (['yes','true','active','1','y','on','current'].includes(activeVal)) entry.active = true;
     }
     // Skip empty rows
-    if (!entry.website && !entry.password && !entry.username) continue;
-    // If there's no website but there's a password, use the first field as website
-    if (!entry.website && keys.length > 0) entry.website = String(row[keys[0]] || '').trim();
+    if (!entry.title && !entry.website && !entry.password && !entry.username) continue;
+    // If there's no title, fall back to website, then first column
+    if (!entry.title) entry.title = entry.website || String(row[keys[0]] || '').trim();
     result.push(entry);
   }
   return result;
@@ -1080,16 +1139,19 @@ function exportExcel() {
     return;
   }
   const rows = state.passwords.map(p => ({
+    Title: p.title || '',
     Website: p.website || '',
     Username: p.username || '',
     Password: p.password || '',
+    Identification: p.identification || '',
+    'Security Questions': p.security || '',
     Category: p.category || '',
     Notes: p.notes || '',
     Active: p.active ? 'Yes' : 'No'
   }));
   const ws = XLSX.utils.json_to_sheet(rows);
   // Make columns wider
-  ws['!cols'] = [{wch:25},{wch:30},{wch:25},{wch:18},{wch:30},{wch:10}];
+  ws['!cols'] = [{wch:22},{wch:25},{wch:28},{wch:22},{wch:22},{wch:32},{wch:18},{wch:32},{wch:10}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Passwords');
   const today = new Date().toISOString().slice(0,10);
